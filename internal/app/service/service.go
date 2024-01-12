@@ -2,6 +2,7 @@ package service
 
 import (
 	"github.com/gorilla/mux"
+	"github.com/nats-io/stan.go"
 	"github.com/sirupsen/logrus"
 	"io"
 	"net/http"
@@ -30,6 +31,17 @@ func (s *Service) Start() error {
 	}
 
 	s.configureRouter()
+
+	sn, err := stan.Connect(s.config.NatsClusterId, s.config.NatsClientId)
+	if err != nil {
+		return err
+	}
+
+	if _, err := sn.Subscribe(s.config.NatsTopic, func(m *stan.Msg) {
+		s.logger.Info("New data: " + string(m.Data))
+	}, stan.DurableName(s.config.DurableName)); err != nil {
+		return err
+	}
 
 	s.logger.Info("starting service...")
 

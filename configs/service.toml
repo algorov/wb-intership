@@ -1,2 +1,7 @@
 bind_addr = ":8080"
 log_level = "debug"
+
+nats_cluster_id = "test-cluster"
+nats_client_id = "slave"
+nats_topic = "main"
+durable_name = "defer"
