@@ -26,7 +26,14 @@ func (s *Cache) AddOrder(order jsonutil.Order) {
 	s.cache[order.OrderUID] = order
 }
 
-// AddOrder ...
-func (s *Cache) GetOrder(orderUID string) {
+// GetOrder ...
+func (s *Cache) GetOrder(orderUID string) (*jsonutil.Order, bool) {
+	s.mx.RLock()
+	defer s.mx.RUnlock()
 
+	if order, flag := s.cache[orderUID]; flag {
+		return &order, true
+	} else {
+		return nil, false
+	}
 }
