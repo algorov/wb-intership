@@ -1,10 +1,15 @@
+# service
+[service]
 bind_addr = ":8080"
 log_level = "debug"
 
+# store
+[store]
+database_url = "host=localhost dbname=wb_intership sslmode=disable"
+
+# nats
+[nats_streaming]
 nats_cluster_id = "test-cluster"
 nats_client_id = "slave"
 nats_topic = "main"
 durable_name = "defer"
-
-[store]
-database_url = "host=localhost dbname=wb_intership sslmode=disable"

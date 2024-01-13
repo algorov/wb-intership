@@ -38,14 +38,9 @@ func (s *Service) Start() error {
 		return err
 	}
 
-	sn, err := stan.Connect(s.config.NatsClusterId, s.config.NatsClientId)
-	if err != nil {
-		return err
-	}
+	err := s.configureAndSubscribeBroker()
 
-	if _, err := sn.Subscribe(s.config.NatsTopic, func(m *stan.Msg) {
-		s.logger.Info("New data: " + string(m.Data))
-	}, stan.DurableName(s.config.DurableName)); err != nil {
+	if err != nil {
 		return err
 	}
 
@@ -67,7 +62,6 @@ func (s *Service) configureLogger() error {
 
 func (s *Service) configureRouter() {
 	s.router.HandleFunc("/index", s.handleIndex())
-
 }
 
 func (s *Service) configureStore() error {
@@ -77,6 +71,21 @@ func (s *Service) configureStore() error {
 	}
 
 	s.store = st
+
+	return nil
+}
+
+func (s *Service) configureAndSubscribeBroker() error {
+	sn, err := stan.Connect(s.config.NatsStreaming.NatsClusterId, s.config.NatsStreaming.NatsClientId)
+	if err != nil {
+		return err
+	}
+
+	if _, err := sn.Subscribe(s.config.NatsStreaming.NatsTopic, func(m *stan.Msg) {
+		s.logger.Info("New data: " + string(m.Data))
+	}, stan.DurableName(s.config.NatsStreaming.DurableName)); err != nil {
+		return err
+	}
 
 	return nil
 }
