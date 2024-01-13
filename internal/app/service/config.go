@@ -1,5 +1,7 @@
 package service
 
+import "l0Service/internal/app/store"
+
 // Config ...
 type Config struct {
 	BindAddr      string `toml:"bind_addr"`
@@ -8,6 +10,7 @@ type Config struct {
 	NatsClientId  string `toml:"nats_client_id"`
 	NatsTopic     string `toml:"nats_topic"`
 	DurableName   string `toml:"durable_name"`
+	Store         *store.Config
 }
 
 // NewConfig ...
@@ -19,5 +22,6 @@ func NewConfig() *Config {
 		NatsClientId:  "slave",
 		NatsTopic:     "main",
 		DurableName:   "defer",
+		Store:         store.NewConfig(),
 	}
 }

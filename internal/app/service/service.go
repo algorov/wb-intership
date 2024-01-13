@@ -5,6 +5,7 @@ import (
 	"github.com/nats-io/stan.go"
 	"github.com/sirupsen/logrus"
 	"io"
+	"l0Service/internal/app/store"
 	"net/http"
 )
 
@@ -13,6 +14,7 @@ type Service struct {
 	config *Config
 	logger *logrus.Logger
 	router *mux.Router
+	store  *store.Store
 }
 
 // New ...
@@ -31,6 +33,10 @@ func (s *Service) Start() error {
 	}
 
 	s.configureRouter()
+
+	if err := s.configureStore(); err != nil {
+		return err
+	}
 
 	sn, err := stan.Connect(s.config.NatsClusterId, s.config.NatsClientId)
 	if err != nil {
@@ -62,6 +68,17 @@ func (s *Service) configureLogger() error {
 func (s *Service) configureRouter() {
 	s.router.HandleFunc("/index", s.handleIndex())
 
+}
+
+func (s *Service) configureStore() error {
+	st := store.New(s.config.Store)
+	if err := st.Open(); err != nil {
+		return err
+	}
+
+	s.store = st
+
+	return nil
 }
 
 func (s *Service) handleIndex() http.HandlerFunc {
