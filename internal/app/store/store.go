@@ -2,6 +2,7 @@ package store
 
 import (
 	"database/sql"
+	"fmt"
 	_ "github.com/lib/pq"
 	"l0Service/internal/util/jsonutil"
 )
@@ -213,18 +214,21 @@ func (s *Store) getPaymentInfo(orderUID string) (*jsonutil.PaymentInfo, error) {
 	return &payInfo, nil
 }
 
-func (s *Store) addItems(orderUID string, items []jsonutil.Item) (int, error) {
+func (s *Store) addItems(orderUID string, items *[]jsonutil.Item) (int, error) {
 	var totalAffected int = 0
 
-	for _, item := range items {
+	for _, item := range *items {
+		fmt.Println(item.Name)
 		result, err := s.db.Exec(
-			"INSERT INTO item (order_uid, chrt_id, track_number, price, rid, sale, size, total_price, nm_id, brand, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
+			"INSERT INTO item (order_uid, chrt_id, track_number, price, rid, name, sale, size, total_price, nm_id, brand, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)",
 			orderUID,
 			item.ChrtID,
 			item.TrackNumber,
 			item.Price,
 			item.RID,
+			item.Name,
 			item.Sale,
+			item.Size,
 			item.TotalPrice,
 			item.NmID,
 			item.Brand,
