@@ -42,7 +42,8 @@ func (s *Store) Close() {
 
 // AddOrder ...
 func (s *Store) AddOrder(order *jsonutil.Order) (int64, error) {
-	result, err := s.db.Exec("INSERT INTO orders (order_uid, track_number, entry, locale, internal_sig, custom_id, shard_key, sm_id, date_creates, oof_shard) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10,)",
+	result, err := s.db.Exec(
+		"INSERT INTO orders (order_uid, track_number, entry, locale, internal_sig, custom_id, shard_key, sm_id, date_creates, oof_shard) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10,)",
 		order.OrderUID,
 		order.TrackNumber,
 		order.Entry,
@@ -124,8 +125,9 @@ func (s *Store) GetOrders() (*[]jsonutil.Order, error) {
 	return &orders, nil
 }
 
-func (s *Store) addDeliveryInfo(orderUID string, deliveryInfo *jsonutil.DeliveryInfo) (int64, error) {
-	result, err := s.db.Exec("INSERT INTO delivey_info (order_uid, name, phone, zip, city, address, region, email) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+func (s *Store) addDeliveryInfo(orderUID string, deliveryInfo *jsonutil.DeliveryInfo) (int, error) {
+	result, err := s.db.Exec(
+		"INSERT INTO delivery_info (order_uid, name, phone, zip, city, address, region, email) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
 		orderUID,
 		deliveryInfo.Name,
 		deliveryInfo.Phone,
@@ -143,7 +145,7 @@ func (s *Store) addDeliveryInfo(orderUID string, deliveryInfo *jsonutil.Delivery
 		return 0, err
 	}
 
-	return affected, nil
+	return int(affected), nil
 }
 
 func (s *Store) getDeliveryInfo(orderUID string) (*jsonutil.DeliveryInfo, error) {
@@ -164,8 +166,9 @@ func (s *Store) getDeliveryInfo(orderUID string) (*jsonutil.DeliveryInfo, error)
 	return &deliveryInfo, nil
 }
 
-func (s *Store) addPaymentInfo(orderUID string, paymentInfo *jsonutil.PaymentInfo) (int64, error) {
-	result, err := s.db.Exec("INSERT INTO payment_info (order_uid, transaction, request_id, currency, provider, amount, payment_dt, bank, delivery_cost, goods_total, custom_fee) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
+func (s *Store) addPaymentInfo(orderUID string, paymentInfo *jsonutil.PaymentInfo) (int, error) {
+	result, err := s.db.Exec(
+		"INSERT INTO payment_info (order_uid, transaction, request_id, currency, provider, amount, payment_dt, bank, delivery_cost, goods_total, custom_fee) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
 		orderUID,
 		paymentInfo.Transaction,
 		paymentInfo.RequestID,
@@ -186,7 +189,7 @@ func (s *Store) addPaymentInfo(orderUID string, paymentInfo *jsonutil.PaymentInf
 		return 0, err
 	}
 
-	return affected, nil
+	return int(affected), nil
 }
 
 func (s *Store) getPaymentInfo(orderUID string) (*jsonutil.PaymentInfo, error) {
@@ -210,8 +213,8 @@ func (s *Store) getPaymentInfo(orderUID string) (*jsonutil.PaymentInfo, error) {
 	return &payInfo, nil
 }
 
-func (s *Store) addItems(orderUID string, items []jsonutil.Item) (int64, error) {
-	var total_affected int64 = 0
+func (s *Store) addItems(orderUID string, items []jsonutil.Item) (int, error) {
+	var totalAffected int = 0
 
 	for _, item := range items {
 		result, err := s.db.Exec(
@@ -227,18 +230,18 @@ func (s *Store) addItems(orderUID string, items []jsonutil.Item) (int64, error) 
 			item.Brand,
 			item.Status)
 		if err != nil {
-			return total_affected, err
+			return totalAffected, err
 		}
 
 		affected, err := result.RowsAffected()
 		if err != nil {
-			return total_affected, err
+			return totalAffected, err
 		}
 
-		total_affected += affected
+		totalAffected += int(affected)
 	}
 
-	return total_affected, nil
+	return totalAffected, nil
 }
 
 func (s *Store) getItems(orderUID string) (*[]jsonutil.Item, error) {
