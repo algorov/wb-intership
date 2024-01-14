@@ -14,6 +14,7 @@ type Cache struct {
 // New ...
 func New() *Cache {
 	return &Cache{
+		mx:    &sync.RWMutex{},
 		cache: make(map[string]jsonutil.Order),
 	}
 }
