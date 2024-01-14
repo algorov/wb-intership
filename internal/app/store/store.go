@@ -40,6 +40,31 @@ func (s *Store) Close() {
 	s.db.Close()
 }
 
+// AddOrder ...
+func (s *Store) AddOrder(order *jsonutil.Order) (int64, error) {
+	result, err := s.db.Exec("INSERT INTO orders (order_uid, track_number, entry, locale, internal_sig, custom_id, shard_key, sm_id, date_creates, oof_shard) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10,)",
+		order.OrderUID,
+		order.TrackNumber,
+		order.Entry,
+		order.Locale,
+		order.InternalSig,
+		order.CustomerID,
+		order.Shardkey,
+		order.SmID,
+		order.DateCreated,
+		order.OofShard)
+	if err != nil {
+		return 0, err
+	}
+
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+
+	return affected, nil
+}
+
 // GetOrders ...
 func (s *Store) GetOrders() (*[]jsonutil.Order, error) {
 	orders := []jsonutil.Order{}
@@ -68,21 +93,21 @@ func (s *Store) GetOrders() (*[]jsonutil.Order, error) {
 			return nil, err
 		}
 
-		deliveryInfo, err_delivery := s.GetDeliveryInfo(order.OrderUID)
+		deliveryInfo, err_delivery := s.getDeliveryInfo(order.OrderUID)
 		if err_delivery != nil {
 			return nil, err_delivery
 		}
 
 		order.Delivery = deliveryInfo
 
-		paymentInfo, err_payment := s.GetPaymentInfo(order.OrderUID)
+		paymentInfo, err_payment := s.getPaymentInfo(order.OrderUID)
 		if err_payment != nil {
 			return nil, err_payment
 		}
 
 		order.Payment = paymentInfo
 
-		items, err_items := s.GetItems(order.OrderUID)
+		items, err_items := s.getItems(order.OrderUID)
 		if err_items != nil {
 			return nil, err_items
 		}
@@ -99,8 +124,29 @@ func (s *Store) GetOrders() (*[]jsonutil.Order, error) {
 	return &orders, nil
 }
 
-// GetDeliveryInfo ...
-func (s *Store) GetDeliveryInfo(orderUID string) (*jsonutil.DeliveryInfo, error) {
+func (s *Store) addDeliveryInfo(orderUID string, deliveryInfo *jsonutil.DeliveryInfo) (int64, error) {
+	result, err := s.db.Exec("INSERT INTO delivey_info (order_uid, name, phone, zip, city, address, region, email) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+		orderUID,
+		deliveryInfo.Name,
+		deliveryInfo.Phone,
+		deliveryInfo.Zip,
+		deliveryInfo.City,
+		deliveryInfo.Address,
+		deliveryInfo.Region,
+		deliveryInfo.Email)
+	if err != nil {
+		return 0, err
+	}
+
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+
+	return affected, nil
+}
+
+func (s *Store) getDeliveryInfo(orderUID string) (*jsonutil.DeliveryInfo, error) {
 	deliveryInfo := jsonutil.DeliveryInfo{}
 	if err := s.db.QueryRow(
 		"SELECT name, phone, zip, city, address, region, email FROM delivery_info WHERE order_uid = $1", orderUID,
@@ -118,8 +164,32 @@ func (s *Store) GetDeliveryInfo(orderUID string) (*jsonutil.DeliveryInfo, error)
 	return &deliveryInfo, nil
 }
 
-// GetPaymentInfo ...
-func (s *Store) GetPaymentInfo(orderUID string) (*jsonutil.PaymentInfo, error) {
+func (s *Store) addPaymentInfo(orderUID string, paymentInfo *jsonutil.PaymentInfo) (int64, error) {
+	result, err := s.db.Exec("INSERT INTO payment_info (order_uid, transaction, request_id, currency, provider, amount, payment_dt, bank, delivery_cost, goods_total, custom_fee) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
+		orderUID,
+		paymentInfo.Transaction,
+		paymentInfo.RequestID,
+		paymentInfo.Currency,
+		paymentInfo.Provider,
+		paymentInfo.Amount,
+		paymentInfo.PaymentDt,
+		paymentInfo.Bank,
+		paymentInfo.DeliveryCost,
+		paymentInfo.GoodsTotal,
+		paymentInfo.CustomFee)
+	if err != nil {
+		return 0, err
+	}
+
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+
+	return affected, nil
+}
+
+func (s *Store) getPaymentInfo(orderUID string) (*jsonutil.PaymentInfo, error) {
 	payInfo := jsonutil.PaymentInfo{}
 	if err := s.db.QueryRow(
 		"SELECT transaction, request_id, currency, provider, amount, payment_dt, bank, delivery_cost, goods_total, custom_fee FROM payment_info WHERE order_uid = $1", orderUID,
@@ -140,8 +210,38 @@ func (s *Store) GetPaymentInfo(orderUID string) (*jsonutil.PaymentInfo, error) {
 	return &payInfo, nil
 }
 
-// GetItems ...
-func (s *Store) GetItems(orderUID string) (*[]jsonutil.Item, error) {
+func (s *Store) addItems(orderUID string, items []jsonutil.Item) (int64, error) {
+	var total_affected int64 = 0
+
+	for _, item := range items {
+		result, err := s.db.Exec(
+			"INSERT INTO item (order_uid, chrt_id, track_number, price, rid, sale, size, total_price, nm_id, brand, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
+			orderUID,
+			item.ChrtID,
+			item.TrackNumber,
+			item.Price,
+			item.RID,
+			item.Sale,
+			item.TotalPrice,
+			item.NmID,
+			item.Brand,
+			item.Status)
+		if err != nil {
+			return total_affected, err
+		}
+
+		affected, err := result.RowsAffected()
+		if err != nil {
+			return total_affected, err
+		}
+
+		total_affected += affected
+	}
+
+	return total_affected, nil
+}
+
+func (s *Store) getItems(orderUID string) (*[]jsonutil.Item, error) {
 	rows, err := s.db.Query(
 		"SELECT chrt_id, track_number, price, rid, sale, size, total_price, nm_id, brand, status FROM items WHERE order_uid = $1", orderUID)
 	if err != nil {
