@@ -6,6 +6,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"io"
 	"l0Service/internal/app/store"
+	"l0Service/internal/util/jsonutil"
 	"net/http"
 )
 
@@ -82,7 +83,29 @@ func (s *Service) configureAndSubscribeBroker() error {
 	}
 
 	if _, err := sn.Subscribe(s.config.NatsStreaming.NatsTopic, func(m *stan.Msg) {
-		s.logger.Info("New data: " + string(m.Data))
+		data := string(m.Data)
+
+		s.logger.Info("New data from NATS-STREAMING\n" + data)
+
+		if valid := jsonutil.ValidateJsonData(data); valid {
+			order, err := jsonutil.GetUnmarshallingJsonData(data)
+			if err != nil {
+				s.logger.Info(err)
+				return
+			}
+
+			result, err := s.store.AddOrder(order)
+			if err != nil {
+				s.logger.Info(err)
+				return
+			}
+
+			if result {
+				s.logger.Info("Data was saved")
+			}
+		} else {
+			s.logger.Info("Invalid data")
+		}
 	}, stan.DurableName(s.config.NatsStreaming.DurableName)); err != nil {
 		return err
 	}
