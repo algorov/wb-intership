@@ -41,29 +41,24 @@ func (s *Store) Close() {
 }
 
 // AddOrder ...
-func (s *Store) AddOrder(order *jsonutil.Order) (int64, error) {
-	result, err := s.db.Exec(
-		"INSERT INTO orders (order_uid, track_number, entry, locale, internal_sig, custom_id, shard_key, sm_id, date_creates, oof_shard) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10,)",
-		order.OrderUID,
-		order.TrackNumber,
-		order.Entry,
-		order.Locale,
-		order.InternalSig,
-		order.CustomerID,
-		order.Shardkey,
-		order.SmID,
-		order.DateCreated,
-		order.OofShard)
-	if err != nil {
-		return 0, err
+func (s *Store) AddOrder(order *jsonutil.Order) (bool, error) {
+	if _, err := s.addOrder(order); err != nil {
+		return false, err
 	}
 
-	affected, err := result.RowsAffected()
-	if err != nil {
-		return 0, err
+	if _, err := s.addDeliveryInfo(order.OrderUID, order.Delivery); err != nil {
+		return false, err
 	}
 
-	return affected, nil
+	if _, err := s.addPaymentInfo(order.OrderUID, order.Payment); err != nil {
+		return false, err
+	}
+
+	if _, err := s.addItems(order.OrderUID, order.Items); err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
 
 // GetOrders ...
@@ -71,7 +66,7 @@ func (s *Store) GetOrders() (*[]jsonutil.Order, error) {
 	orders := []jsonutil.Order{}
 
 	rows, err_order := s.db.Query(
-		"SELECT order_uid, track_number, entry, locale, internal_sig, custom_id, shard_key, sm_id, date_creates, oof_shard FROM orders")
+		"SELECT order_uid, track_number, entry, locale, internal_signature, customer_id, shardkey, sm_id, date_created, oof_shard FROM orders")
 	if err_order != nil {
 		return nil, err_order
 	}
@@ -86,7 +81,6 @@ func (s *Store) GetOrders() (*[]jsonutil.Order, error) {
 			&order.Locale,
 			&order.InternalSig,
 			&order.CustomerID,
-			&order.DeliveryService,
 			&order.Shardkey,
 			&order.SmID,
 			&order.DateCreated,
@@ -123,6 +117,31 @@ func (s *Store) GetOrders() (*[]jsonutil.Order, error) {
 	}
 
 	return &orders, nil
+}
+
+func (s *Store) addOrder(order *jsonutil.Order) (int, error) {
+	result, err := s.db.Exec(
+		"INSERT INTO orders (order_uid, track_number, entry, locale, internal_signature, customer_id, shardkey, sm_id, date_created, oof_shard) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+		order.OrderUID,
+		order.TrackNumber,
+		order.Entry,
+		order.Locale,
+		order.InternalSig,
+		order.CustomerID,
+		order.Shardkey,
+		order.SmID,
+		order.DateCreated,
+		order.OofShard)
+	if err != nil {
+		return 0, err
+	}
+
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+
+	return int(affected), nil
 }
 
 func (s *Store) addDeliveryInfo(orderUID string, deliveryInfo *jsonutil.DeliveryInfo) (int, error) {
