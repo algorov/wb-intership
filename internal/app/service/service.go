@@ -8,6 +8,7 @@ import (
 	"l0Service/internal/app/store"
 	"l0Service/internal/util/jsonutil"
 	"net/http"
+	"os"
 )
 
 // Service ...
@@ -62,7 +63,7 @@ func (s *Service) configureLogger() error {
 }
 
 func (s *Service) configureRouter() {
-	s.router.HandleFunc("/index", s.handleIndex())
+	s.router.HandleFunc("/", s.handleIndex())
 }
 
 func (s *Service) configureStore() error {
@@ -115,6 +116,23 @@ func (s *Service) configureAndSubscribeBroker() error {
 
 func (s *Service) handleIndex() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
-		io.WriteString(writer, "GET: INDEX")
+		if request.Method == http.MethodPost {
+			s.logger.Info("Что-то получили...")
+		}
+
+		// Открываем файл index.html
+		page, err := os.Open("web/index.html")
+		if err != nil {
+			http.Error(writer, "Unable to read HTML file", http.StatusInternalServerError)
+			return
+		}
+		defer page.Close()
+
+		writer.Header().Set("Content-Type", "text/html")
+
+		if _, err := io.Copy(writer, page); err != nil {
+			http.Error(writer, "Unable to copy HTML file to response", http.StatusInternalServerError)
+			return
+		}
 	}
 }
