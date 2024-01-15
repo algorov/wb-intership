@@ -2,7 +2,6 @@ package store
 
 import (
 	"database/sql"
-	"fmt"
 	_ "github.com/lib/pq"
 	"l0Service/internal/util/jsonutil"
 )
@@ -218,7 +217,6 @@ func (s *Store) addItems(orderUID string, items *[]jsonutil.Item) (int, error) {
 	var totalAffected int = 0
 
 	for _, item := range *items {
-		fmt.Println(item.Name)
 		result, err := s.db.Exec(
 			"INSERT INTO item (order_uid, chrt_id, track_number, price, rid, name, sale, size, total_price, nm_id, brand, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)",
 			orderUID,
@@ -250,7 +248,7 @@ func (s *Store) addItems(orderUID string, items *[]jsonutil.Item) (int, error) {
 
 func (s *Store) getItems(orderUID string) (*[]jsonutil.Item, error) {
 	rows, err := s.db.Query(
-		"SELECT chrt_id, track_number, price, rid, sale, size, total_price, nm_id, brand, status FROM items WHERE order_uid = $1", orderUID)
+		"SELECT chrt_id, track_number, price, rid, name, sale, size, total_price, nm_id, brand, status FROM item WHERE order_uid = $1", orderUID)
 	if err != nil {
 		return nil, err
 	}
