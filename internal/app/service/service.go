@@ -1,11 +1,13 @@
 package service
 
 import (
+	"encoding/json"
 	"github.com/gorilla/mux"
 	"github.com/nats-io/stan.go"
 	"github.com/sirupsen/logrus"
 	"io"
 	"l0Service/internal/app/store"
+	"l0Service/internal/util/cache"
 	"l0Service/internal/util/jsonutil"
 	"net/http"
 	"os"
@@ -17,6 +19,7 @@ type Service struct {
 	logger *logrus.Logger
 	router *mux.Router
 	store  *store.Store
+	cache  *cache.Cache
 }
 
 // New ...
@@ -39,6 +42,8 @@ func (s *Service) Start() error {
 	if err := s.configureStore(); err != nil {
 		return err
 	}
+
+	s.configureCache()
 
 	err := s.configureAndSubscribeBroker()
 
@@ -78,6 +83,20 @@ func (s *Service) configureStore() error {
 	return nil
 }
 
+func (s *Service) configureCache() error {
+	s.cache = cache.New()
+	orders, err := s.store.GetOrders()
+	if err != nil {
+		return err
+	}
+
+	for _, order := range orders {
+		s.cache.AddOrder(order)
+	}
+
+	return nil
+}
+
 func (s *Service) configureAndSubscribeBroker() error {
 	sn, err := stan.Connect(s.config.NatsStreaming.NatsClusterId, s.config.NatsStreaming.NatsClientId)
 	if err != nil {
@@ -97,6 +116,8 @@ func (s *Service) configureAndSubscribeBroker() error {
 			}
 
 			result, err := s.store.AddOrder(order)
+
+			s.cache.AddOrder(*order)
 			if err != nil {
 				s.logger.Info(err)
 				return
@@ -144,8 +165,20 @@ func (s *Service) handleResult() http.HandlerFunc {
 			}
 
 			inputValue := request.FormValue("inputValue")
-			writer.WriteHeader(http.StatusOK)
-			writer.Write([]byte(inputValue))
+
+			order, isExist := s.cache.GetOrder(inputValue)
+			if isExist {
+				result, err := json.Marshal(&order)
+				if err != nil {
+					s.logger.Info(err)
+				}
+
+				writer.WriteHeader(http.StatusOK)
+				writer.Write(result)
+			} else {
+				writer.WriteHeader(http.StatusNotFound)
+			}
+
 			return
 		}
 

@@ -93,20 +93,20 @@ type Item struct {
 }
 
 type Order struct {
-	OrderUID        string        `json:"order_uid"`
-	TrackNumber     string        `json:"track_number"`
-	Entry           string        `json:"entry"`
-	Delivery        *DeliveryInfo `json:"delivery"`
-	Payment         *PaymentInfo  `json:"payment"`
-	Items           *[]Item       `json:"items"`
-	Locale          string        `json:"locale"`
-	InternalSig     string        `json:"internal_signature"`
-	CustomerID      string        `json:"customer_id"`
-	DeliveryService string        `json:"delivery_service"`
-	Shardkey        string        `json:"shardkey"`
-	SmID            int           `json:"sm_id"`
-	DateCreated     time.Time     `json:"date_created"`
-	OofShard        string        `json:"oof_shard"`
+	OrderUID        string       `json:"order_uid"`
+	TrackNumber     string       `json:"track_number"`
+	Entry           string       `json:"entry"`
+	Delivery        DeliveryInfo `json:"delivery"`
+	Payment         PaymentInfo  `json:"payment"`
+	Items           []Item       `json:"items"`
+	Locale          string       `json:"locale"`
+	InternalSig     string       `json:"internal_signature"`
+	CustomerID      string       `json:"customer_id"`
+	DeliveryService string       `json:"delivery_service"`
+	Shardkey        string       `json:"shardkey"`
+	SmID            int          `json:"sm_id"`
+	DateCreated     time.Time    `json:"date_created"`
+	OofShard        string       `json:"oof_shard"`
 }
 
 func ValidateJsonData(data string) bool {
