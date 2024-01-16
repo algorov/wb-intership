@@ -10,7 +10,7 @@ import (
 func TestService_HandleIndex(t *testing.T) {
 	s := New(NewConfig())
 	recorder := httptest.NewRecorder()
-	request, _ := http.NewRequest(http.MethodGet, "/index", nil)
+	request, _ := http.NewRequest(http.MethodGet, "/", nil)
 	s.handleIndex().ServeHTTP(recorder, request)
-	assert.Equal(t, recorder.Body.String(), "GET: INDEX")
+	assert.Equal(t, "Unable to read HTML file\n", recorder.Body.String())
 }

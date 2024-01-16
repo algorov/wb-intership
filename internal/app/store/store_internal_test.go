@@ -52,7 +52,7 @@ func TestStore_AddDeliveryInfo(t *testing.T) {
 		assert.Fail(t, err.Error())
 	}
 
-	affected, err := s.addDeliveryInfo(order.OrderUID, order.Delivery)
+	affected, err := s.addDeliveryInfo(order.OrderUID, &order.Delivery)
 	if err != nil {
 		assert.Fail(t, err.Error())
 		fmt.Printf("%+v\n", order.Delivery)
@@ -77,7 +77,7 @@ func TestStore_AddPaymentInfo(t *testing.T) {
 		assert.Fail(t, err.Error())
 	}
 
-	affected, err := s.addPaymentInfo(order.OrderUID, order.Payment)
+	affected, err := s.addPaymentInfo(order.OrderUID, &order.Payment)
 	if err != nil {
 		assert.Fail(t, err.Error())
 		fmt.Printf("%+v\n", order.Payment)
@@ -102,7 +102,7 @@ func TestStore_AddItems(t *testing.T) {
 		assert.Fail(t, err.Error())
 	}
 
-	affected, err := s.addItems(order.OrderUID, order.Items)
+	affected, err := s.addItems(order.OrderUID, &order.Items)
 	if err != nil {
 		assert.Error(t, err)
 		fmt.Printf("%+v\n", order.Items)
@@ -145,7 +145,7 @@ func TestStore_GetDeliveryInfo(t *testing.T) {
 			}
 
 			var isExist = false
-			if info != nil {
+			if info.Name != "" {
 				isExist = true
 			}
 
@@ -188,12 +188,7 @@ func TestStore_GetPaymentInfo(t *testing.T) {
 				assert.Fail(t, err.Error())
 			}
 
-			var isExist = false
-			if info != nil {
-				isExist = true
-			}
-
-			assert.Equal(t, testCase.expected, isExist)
+			assert.Equal(t, testCase.expected, assert.NotEmpty(t, info))
 			//fmt.Printf("%+v", info)
 		})
 	}
@@ -232,12 +227,7 @@ func TestStore_GetItems(t *testing.T) {
 				assert.Fail(t, err.Error())
 			}
 
-			var isExist = false
-			if len(*info) > 0 {
-				isExist = true
-			}
-
-			assert.Equal(t, testCase.expected, isExist)
+			assert.Equal(t, testCase.expected, assert.NotEmpty(t, info))
 			//fmt.Printf("%+v\n", info)
 		})
 	}
