@@ -106,7 +106,8 @@ func (s *Service) configureAndSubscribeBroker() error {
 	if _, err := sn.Subscribe(s.config.NatsStreaming.NatsTopic, func(m *stan.Msg) {
 		data := string(m.Data)
 
-		s.logger.Info("New data from NATS-STREAMING\n" + data)
+		s.logger.Info("New data from NATS-STREAMING")
+		//s.logger.Info(data)
 
 		if valid := jsonutil.ValidateJsonData(data); valid {
 			order, err := jsonutil.GetUnmarshallingJsonData(data)
@@ -157,7 +158,7 @@ func (s *Service) handleIndex() http.HandlerFunc {
 func (s *Service) handleResult() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method == http.MethodPost {
-			s.logger.Info("POST from user")
+			s.logger.Info("POST FROM CLIENT")
 
 			if err := request.ParseForm(); err != nil {
 				http.Error(writer, "Unable to parse form data", http.StatusBadRequest)

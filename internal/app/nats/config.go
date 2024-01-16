@@ -8,6 +8,7 @@ type Config struct {
 	DurableName   string `toml:"durable_name"`
 }
 
+// NewConfig ...
 func NewConfig() *Config {
 	return &Config{
 		NatsClusterId: "test-cluster",

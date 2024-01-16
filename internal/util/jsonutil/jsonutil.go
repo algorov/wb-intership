@@ -109,6 +109,7 @@ type Order struct {
 	OofShard        string       `json:"oof_shard"`
 }
 
+// ValidateJsonData ...
 func ValidateJsonData(data string) bool {
 	schemaLoader := gojsonschema.NewStringLoader(schemaString)
 	documentLoader := gojsonschema.NewStringLoader(data)
@@ -125,6 +126,7 @@ func ValidateJsonData(data string) bool {
 	}
 }
 
+// GetUnmarshallingJsonData ...
 func GetUnmarshallingJsonData(data string) (order *Order, err error) {
 	if err := json.Unmarshal([]byte(data), &order); err != nil {
 		return nil, err
