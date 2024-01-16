@@ -46,15 +46,15 @@ func (s *Store) AddOrder(order *jsonutil.Order) (bool, error) {
 		return false, err
 	}
 
-	if _, err := s.addDeliveryInfo(order.OrderUID, order.Delivery); err != nil {
+	if _, err := s.addDeliveryInfo(order.OrderUID, &order.Delivery); err != nil {
 		return false, err
 	}
 
-	if _, err := s.addPaymentInfo(order.OrderUID, order.Payment); err != nil {
+	if _, err := s.addPaymentInfo(order.OrderUID, &order.Payment); err != nil {
 		return false, err
 	}
 
-	if _, err := s.addItems(order.OrderUID, order.Items); err != nil {
+	if _, err := s.addItems(order.OrderUID, &order.Items); err != nil {
 		return false, err
 	}
 
@@ -62,7 +62,7 @@ func (s *Store) AddOrder(order *jsonutil.Order) (bool, error) {
 }
 
 // GetOrders ...
-func (s *Store) GetOrders() (*[]jsonutil.Order, error) {
+func (s *Store) GetOrders() ([]jsonutil.Order, error) {
 	orders := []jsonutil.Order{}
 
 	rows, err_order := s.db.Query(
@@ -116,7 +116,7 @@ func (s *Store) GetOrders() (*[]jsonutil.Order, error) {
 		return nil, err
 	}
 
-	return &orders, nil
+	return orders, nil
 }
 
 func (s *Store) addOrder(order *jsonutil.Order) (int, error) {
@@ -167,7 +167,7 @@ func (s *Store) addDeliveryInfo(orderUID string, deliveryInfo *jsonutil.Delivery
 	return int(affected), nil
 }
 
-func (s *Store) getDeliveryInfo(orderUID string) (*jsonutil.DeliveryInfo, error) {
+func (s *Store) getDeliveryInfo(orderUID string) (jsonutil.DeliveryInfo, error) {
 	deliveryInfo := jsonutil.DeliveryInfo{}
 	if err := s.db.QueryRow(
 		"SELECT name, phone, zip, city, address, region, email FROM delivery_info WHERE order_uid = $1", orderUID,
@@ -179,10 +179,10 @@ func (s *Store) getDeliveryInfo(orderUID string) (*jsonutil.DeliveryInfo, error)
 		&deliveryInfo.Address,
 		&deliveryInfo.Region,
 		&deliveryInfo.Email); err != nil {
-		return nil, err
+		return deliveryInfo, err
 	}
 
-	return &deliveryInfo, nil
+	return deliveryInfo, nil
 }
 
 func (s *Store) addPaymentInfo(orderUID string, paymentInfo *jsonutil.PaymentInfo) (int, error) {
@@ -211,7 +211,7 @@ func (s *Store) addPaymentInfo(orderUID string, paymentInfo *jsonutil.PaymentInf
 	return int(affected), nil
 }
 
-func (s *Store) getPaymentInfo(orderUID string) (*jsonutil.PaymentInfo, error) {
+func (s *Store) getPaymentInfo(orderUID string) (jsonutil.PaymentInfo, error) {
 	payInfo := jsonutil.PaymentInfo{}
 	if err := s.db.QueryRow(
 		"SELECT transaction, request_id, currency, provider, amount, payment_dt, bank, delivery_cost, goods_total, custom_fee FROM payment_info WHERE order_uid = $1", orderUID,
@@ -226,10 +226,10 @@ func (s *Store) getPaymentInfo(orderUID string) (*jsonutil.PaymentInfo, error) {
 		&payInfo.DeliveryCost,
 		&payInfo.GoodsTotal,
 		&payInfo.CustomFee); err != nil {
-		return nil, err
+		return payInfo, err
 	}
 
-	return &payInfo, nil
+	return payInfo, nil
 }
 
 func (s *Store) addItems(orderUID string, items *[]jsonutil.Item) (int, error) {
@@ -265,7 +265,7 @@ func (s *Store) addItems(orderUID string, items *[]jsonutil.Item) (int, error) {
 	return totalAffected, nil
 }
 
-func (s *Store) getItems(orderUID string) (*[]jsonutil.Item, error) {
+func (s *Store) getItems(orderUID string) ([]jsonutil.Item, error) {
 	rows, err := s.db.Query(
 		"SELECT chrt_id, track_number, price, rid, name, sale, size, total_price, nm_id, brand, status FROM item WHERE order_uid = $1", orderUID)
 	if err != nil {
@@ -297,5 +297,5 @@ func (s *Store) getItems(orderUID string) (*[]jsonutil.Item, error) {
 		return nil, err
 	}
 
-	return &items, nil
+	return items, nil
 }
