@@ -64,6 +64,7 @@ func (s *Service) configureLogger() error {
 
 func (s *Service) configureRouter() {
 	s.router.HandleFunc("/", s.handleIndex())
+	s.router.HandleFunc("/result", s.handleResult())
 }
 
 func (s *Service) configureStore() error {
@@ -116,11 +117,6 @@ func (s *Service) configureAndSubscribeBroker() error {
 
 func (s *Service) handleIndex() http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
-		if request.Method == http.MethodPost {
-			s.logger.Info("Что-то получили...")
-		}
-
-		// Открываем файл index.html
 		page, err := os.Open("web/index.html")
 		if err != nil {
 			http.Error(writer, "Unable to read HTML file", http.StatusInternalServerError)
@@ -134,5 +130,25 @@ func (s *Service) handleIndex() http.HandlerFunc {
 			http.Error(writer, "Unable to copy HTML file to response", http.StatusInternalServerError)
 			return
 		}
+	}
+}
+
+func (s *Service) handleResult() http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method == http.MethodPost {
+			s.logger.Info("POST from user")
+
+			if err := request.ParseForm(); err != nil {
+				http.Error(writer, "Unable to parse form data", http.StatusBadRequest)
+				return
+			}
+
+			inputValue := request.FormValue("inputValue")
+			writer.WriteHeader(http.StatusOK)
+			writer.Write([]byte(inputValue))
+			return
+		}
+
+		http.Error(writer, "Method not allowed", http.StatusMethodNotAllowed)
 	}
 }
